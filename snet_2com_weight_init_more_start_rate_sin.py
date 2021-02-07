@@ -5,15 +5,11 @@ Created on Sun Dec 23 12:44:39 2018
 Generate social networks with no node attributes
              G.edges[i,j]
              net_size: total number of users
-             comm_size: number of members in community 0
+             comm_size: number of members in community 1
              fw_size: average number of followers
-             alpha: ratio of followers in community 0 per comm-0 member.
-             If alpha>=1, the network is not rewired such that the community has density alpha.
-             beta: ratio of followers in community 1 per comm-1 member
-             
-             2019.11.1 removal of calculating alpha and beta in the simulation execution
-             2019.11.1 static network
-             2020.6.4  beta is used for communities >=1.
+             alpha: ratio of followers belonging to community 1
+             If alpha>=1, the network topology is not rewired for community 1 to have cohesion index alpha.
+             beta: ratio of followers belonging to community >=2
 
 @author: oida
 """
@@ -27,12 +23,13 @@ import numpy.random as rd
 
 class Snet(nx.DiGraph):
     """
-    dcnt: discount function as a number of received retweets
-    dcnt=0: non-descreasing
+    dcnt: weight function as a number of received retweets
+    dcnt=0: independent
     dcnt=1: exponential
     dcnt=2: multiplicative
     dcnt=3: linear
     dcnt=4: simple contagion (first exposure only)
+    dcnt=5: social reinforcement
     """
     def __init__(self,
                  net_size=20,
@@ -82,40 +79,17 @@ class Snet(nx.DiGraph):
             self.dcnt_fun = [max(2.0 - 1.0 * i, 0) for i in range(1, self.maxrecv)]
         else:
             self.dcnt_fun = [1 - 0.5 * 0.1 ** (i-1) for i in range(1, self.maxrecv)]
-            # for i in range(10):
-            #     print(self.dcnt_fun[i])
 
-    def _gen_snet(self):
-        rd.seed(seed=self.seed)
-        th = self.fw_size / (self.net_size - 1)
-        th1 = self.alpha * self.fw_size / (self.comm_size - 1)
-        th2 = (1 - self.alpha) * self.fw_size / (self.net_size - self.comm_size)
 
-        # for i in range(self.net_size): self.add_node(i)
-        self.add_nodes_from(range(self.net_size))
-        # self.add_edges_from(rd.randint(self.net_size,
-        #                                       size=(self.net_size * self.net_size, 2)))
-        for i in range(self.net_size):
-            for j in range(self.net_size):
-                rn = rd.rand()
-                if i != j:
-                    if i < self.comm_size:
-                        if j < self.comm_size:
-                            if rn <= th1: self.add_edge(i, j)
-                        else:
-                            if rn <= th2: self.add_edge(i, j)
-                    else:
-                        if rn <= th: self.add_edge(i, j)
 
     def _random_snet(self, netprop):
         """
         Generate small word, powerlaw networks
-        with initiator's followers includes communities having ratio self.alpha and self.beta.
+        with communities having indeces self.alpha and self.beta.
 
         node_states[0]:   whether the node has alread retweeted (True) or not (False).
         node_states[1]:   How many times a node received retweets before it retweeted.
  ################ 2020 6/27 rate
-        node_states[2]:   (old: whether the node is a community member (True) or not.)
         node_states[2]:   whether the node belong to community i (i=1000 indicates non-community mem).
 ################ 2020 6/4 2communities
         node_states[3]:   How many times a node received retweets after it retweeted.
@@ -124,18 +98,11 @@ class Snet(nx.DiGraph):
         if netprop == 0:
             G1 = nx.fast_gnp_random_graph(n=self.net_size, p=self.fw_size / (self.net_size - 1), seed=self.seed,
                                           directed=True)
-        # print("fast_gnp_random_graph(n=net_size, p=fw_size / (net_size - 1), seed=seed, directed=True)")
         elif netprop == 1:
             H = nx.connected_watts_strogatz_graph(n=self.net_size, k=self.fw_size, p=self.p, seed=self.seed)
             G1 = H.to_directed()
-            # G1 = nx.newman_watts_strogatz_graph(n=self.net_size, k=self.fw_size, p=0.1, seed=self.seed)
 
-        # print("newman_watts_strogatz_graph(n=net_size, k=6, p=100 * fw_size / (net_size - 1), seed=seed)")
         elif netprop == 2:
-            # G1 = nx.barabasi_albert_graph(n=self.net_size, m=self.net_size - 1, seed=self.seed)
-        # print("barabasi_albert_graph(n=net_size, m=net_size - 1, seed=seed)")
-        # G1 = nx.powerlaw_cluster_graph(n=net_size, m=net_size - 1, p=50 * fw_size / (net_size - 1), seed=seed)
-        # print("powerlaw_cluster_graph(n=net_size, m=net_size - 1, p=50 * fw_size / (net_size - 1), seed=seed)")
             H = nx.extended_barabasi_albert_graph(n=self.net_size, m=8, p=self.p, q=self.q, seed=self.seed)
             G1 = H.to_directed()
         else:
@@ -171,9 +138,9 @@ class Snet(nx.DiGraph):
 
     def _create_comm(self, comm_id):
         """
-        Make a community in a network
-        The first community corresponds to index alpha
-        The other communities correspond to index beta
+        Make a community according to Algorithm 1 in the paper.
+        Community 1 corresponds to cohesion index alpha
+        The other communities correspond to cohesion index beta
         """
 
         rd.seed(seed=self.seed)
@@ -265,22 +232,6 @@ class Snet(nx.DiGraph):
             
         # print(in_follower, out_follower)  
         return (addb, rmvb, in_follower, out_follower)
-
-#     def init_snet(self):
-#         """
-#         node_states[0]:   whether the node has alread retweeted (True) or not (False).
-#         node_states[1]:   How many times a node received retweets before it retweeted.
-################ 2020 6/27 rate
-#         node_states[2]:   whether the node belong to community i (i=1000 indicates non-community mem).
-# ################ 2020 6/4 2communities
-#         node_states[3]:   How many times a node received retweets after it retweeted.
-#         """
-#         self.node_states = [[False, 0, False, 0] for _ in range(self.net_size)]
-# ################ 2020 6/4 2communities
-#         for i in range(self.comm_size):
-# ################ 2020 6/25 comm_strt            
-#             self.node_states[i + self.comm_size * self.comm_strt][2] = True
-#         # for i in range(self.net_size): print(i, self.node_states[i])
 
 
     # def exe_sim(self, sim_time, mu):
@@ -481,10 +432,6 @@ class Snet(nx.DiGraph):
         	delta = 0.0
         if comm_on == 0 and node_type == 0: 
         	delta = 0.0        
-        # if comm_on == 1 and node_type == 1: 
-        # 	delta = 0.0
-        # if comm_on == 0 and node_type == 0: 
-        # 	delta = 0.0
   ################ 2020 7/14 sin
         if sin == 1:
             day = 0.1 * np.sin(2.0 * np.pi * self.cur_time / 1440.0)
@@ -519,15 +466,3 @@ class Snet(nx.DiGraph):
         part2 = 1. * alpha / (alpha - 1)
         part3 = (1. / (m ** (alpha - 1)) - 1. / (b ** (alpha - 1.)))
         return part1 * part2 * part3
-
-# link = self.edges()
-# for i in range(self.net_size):
-#    print(user[i])
-#    print(self.succ[i].items())
-#    print(self.successors(i))
-
-
-# fig = plt.figure()
-# ax = fig.add_subplot(1,1,1)
-# ax.hist(rn, bins=50)
-# fig.show()
