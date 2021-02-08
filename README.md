@@ -6,5 +6,5 @@
 2. data-repeat3_alpha.py: execute simulation with designated parameters
 3. plot-data.py: draw histograms using simulation results
 
-The plot program outputs histograms in Fig. 3 (a)-(j) in the paper.
+The plot programs output histograms in Fig. 3 (a)-(j) in the paper.
 
