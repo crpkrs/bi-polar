@@ -1,4 +1,4 @@
-# bi-polar
+# Bi-polarization
  Simulation Programs: snet_2com_weight_init_more_start_rate_sin.py, data-repeat3_alpha.py, plot-alpha.py
 
 snet_2com_weight_init_more_start_rate_sin.py: simulation program
