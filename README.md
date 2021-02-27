@@ -12,17 +12,6 @@ Simulation Programs for Python 3.7:
 3. data-repeat4_alpha.py: 
     a simulation execution program for Pokec.
     soc-pokec-relationships.txt (https://snap.stanford.edu/data/soc-Pokec.html) must be in the same folder.
-=======
-# Bi-polarization
-
- Simulation Programs: 
-
-1. snet_2com_weight_init_more_start_rate_sin.py: simulation program
-2. data-repeat3_alpha.py: execute simulation with designated parameters
-3. plot-data.py: draw histograms using simulation results
-
-The plot programs output histograms in Fig. 3 (a)-(j) in the paper.
->>>>>>> 3f7b4d47b67946a3907673847cff1cfaa63598fc
 
 4. plot-data.py: 
     a program that inputs a simulation output (numpy data) and outputs a histogram in Fig. 3 in the paper (a pdf file).
