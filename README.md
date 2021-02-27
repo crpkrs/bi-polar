@@ -21,6 +21,7 @@ Output of data-repeat3_alpha.py:
 1. 2021-02-10_n800000_cn20_cs0_a0.2_b0.5_dlt0.0_on2_i0_c1000_f100_r10.03_r20.03_r30.03_p0_q0_d1_s1.2_m4320_net2_mo2_ba1000.npy
 
     simulation start: Feb. 10, 2021
+    
     n: net_size=800,000     <------- network size (N)
     
     cn: comm_num=20         <------- number of communities (N_c)
