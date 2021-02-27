@@ -64,6 +64,7 @@ Output of data-repeat3_alpha.py:
     ba: batch_size=1000     <------- number of samples
 
 Outputs of plot-data.py:
+
     nc-l0.02.pdf            <------- Fig. 3(a)
     
     20comm-l0.03.pdf        <------- Fig. 3(b)
