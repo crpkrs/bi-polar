@@ -14,32 +14,33 @@ import pandas as pd
 import argparse
 import multiprocessing as mp
 
-sim_time = 100000
-net_size = 800000 # 800000
-comm_size = 1000 # 8000
-fw_size = 100 #100 # fw_size < comm_size
-rtrate_com = 0.02
-rtrate_oth = 0.02
-rtrate_ocom = 0.02
-p=0
-q=0
-dcnt = 1 # 0: non-discount, 1: exp, 2: multi, 3: linear, 4: simple, 5: social reinforcement
-shape = 1.2 # pareto shape
-maxday = 3 * 1440 # pareto bound = 3 days
-netprop = 2 # 0: fast_gnp, 1: Watts, 2: Barabasi
-batch_size = 1000 #10
-comm_num=1
-alpha=1
-beta=1
-delta=0.0 
-comm_on=2
-init_out=0
-more = 0
-comm_strt=0
+sim_time = 100000   # maximum simulation time
+net_size = 800000   # network size (N)
+comm_size = 1000    # community size (C)
+fw_size = 100       # number of initiator's followers (F_0)
+rtrate_com = 0.02   # retweet rate of community 1 members (lambda_1)
+rtrate_oth = 0.02   # retweet rate of users not belonging to any community (lambda_0)
+rtrate_ocom = 0.02  # retweet rate of community >1 members (lambda_>1)
+p=0                 # parameter of SF and SW (p=0.01 for SW, p=0 for SF)
+q=0                 # parameter of SF (q=0 for SF)
+dcnt = 1            # weight func, 0: independent, 1: 0.9^n-1, 2: 1/n, 3: linear, 4: [n=1], 5: social reinf
+shape = 1.2         # shape of truncated Pareto (a)
+maxday = 3 * 1440   # scale of truncated Pareto (b)
+netprop = 2         # graph type, 0: ER, 1: SW, 2: SF, >2: Pokec
+batch_size = 1000   # number of samples
+comm_num=1          # number of communities (N_c)
+alpha=1             # cohesion of community 1, alpha=1 implies alpha_1=NC
+beta=1              # cohesion of community >1, beta=1 implies alpha_>1=NC
+delta=0.0           # size of order-dependent fluctuations in retweet prob 
+comm_on=2           # place where fluctuations occur, comm_on=2 implies everywhere
+init_out=0          # number of initiator's followers who are not community 1 members (R_i=100*(f-init_out)/f)
+more = 2            # method of selecting initiator's followers
+comm_strt=0         # offset added to user id
 
 
 def sim(seed = None):
     G = snet.Snet(seed=seed, net_size=net_size, comm_size=comm_size, fw_size=fw_size, 
+    # G = snet.Snet(net_size=net_size, comm_size=comm_size, fw_size=fw_size, 
               p=p, q=q, dcnt=dcnt, alpha=alpha, beta=beta, comm_num=comm_num, more=more, 
               comm_strt=comm_strt)
     # G.seed = seed
@@ -67,7 +68,7 @@ if __name__ == '__main__':
                 + '_r1' + str(rtrate_com) + '_r2' + str(rtrate_oth) + '_r3' + str(rtrate_ocom)\
                 + '_p' + str(p) + '_q' + str(q) + '_d' + str(dcnt) + '_s' + str(shape) \
                 + '_m' + str(maxday) + '_net' + str(netprop) + '_mo' + str(more) + '_ba' + str(batch_size) 
-    outcome_fname = '.' + str(now) + condition
+    outcome_fname = str(now) + condition
     p_cores = mp.cpu_count()
     print ("p_cores=", p_cores)
     pool = mp.Pool(4)

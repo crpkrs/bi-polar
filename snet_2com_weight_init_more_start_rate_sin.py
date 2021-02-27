@@ -6,10 +6,9 @@ Generate social networks with no node attributes
              G.edges[i,j]
              net_size: total number of users
              comm_size: number of members in community 1
-             fw_size: average number of followers
-             alpha: ratio of followers belonging to community 1
-             If alpha>=1, the network topology is not rewired for community 1 to have cohesion index alpha.
-             beta: ratio of followers belonging to community >=2
+             fw_size: number of initiator's followers
+             alpha: cohesion index of community 1, alpha>=1 denotes alpha_1=NC           
+             beta: cohesion index of community >1, beta>=1 denotes alpha_>1=NC  
 
 @author: oida
 """
@@ -23,12 +22,12 @@ import numpy.random as rd
 
 class Snet(nx.DiGraph):
     """
-    dcnt: weight function as a number of received retweets
+    dcnt: a function as a number of received messages
     dcnt=0: independent
     dcnt=1: exponential
     dcnt=2: multiplicative
     dcnt=3: linear
-    dcnt=4: simple contagion (first exposure only)
+    dcnt=4: simple contagion
     dcnt=5: social reinforcement
     """
     def __init__(self,
@@ -84,15 +83,14 @@ class Snet(nx.DiGraph):
 
     def _random_snet(self, netprop):
         """
-        Generate small word, powerlaw networks
-        with communities having indeces self.alpha and self.beta.
+        Generate a random graph including communities of cohesion indexes alpha and beta
 
-        node_states[0]:   whether the node has alread retweeted (True) or not (False).
-        node_states[1]:   How many times a node received retweets before it retweeted.
+        node_states[0]:   the user has alread retweeted (True) or not (False).
+        node_states[1]:   number of times the user has received retweets before posting 
  ################ 2020 6/27 rate
-        node_states[2]:   whether the node belong to community i (i=1000 indicates non-community mem).
+        node_states[2]:   community id (which starts from zero) the user belongs to (1000 means nonexistence)
 ################ 2020 6/4 2communities
-        node_states[3]:   How many times a node received retweets after it retweeted.
+        node_states[3]:   number of times the user has received retweets after posting
         """
         
         if netprop == 0:
@@ -106,7 +104,7 @@ class Snet(nx.DiGraph):
             H = nx.extended_barabasi_albert_graph(n=self.net_size, m=8, p=self.p, q=self.q, seed=self.seed)
             G1 = H.to_directed()
         else:
-        # pokec
+        # Pokec
             G1 = self.G
 
 ################ 2020 6/27 rate
@@ -138,9 +136,8 @@ class Snet(nx.DiGraph):
 
     def _create_comm(self, comm_id):
         """
-        Make a community according to Algorithm 1 in the paper.
-        Community 1 corresponds to cohesion index alpha
-        The other communities correspond to cohesion index beta
+        Create a community according to Algorithm 1 in the paper.
+        alpha and beta correspond to cohesion indexes of community 1 and >1
         """
 
         rd.seed(seed=self.seed)
@@ -150,7 +147,7 @@ class Snet(nx.DiGraph):
         rmvb = []
         maxrep = 1000
 ################ 2020 6/4 2communities
-        if comm_id == 0: 
+        if comm_id == 0: # comm_id=0 corresponds to C_1
             index = self.alpha
         else:
             index = self.beta
@@ -238,25 +235,27 @@ class Snet(nx.DiGraph):
     def exe_sim(self, sim_time, rtrate_com, rtrate_oth, rtrate_ocom, shape, maxday, 
                 delta=0.0, comm_on=1, init_out=0, sin=0):
         """
-        rtrate_com: retweet rate inside community 0
-        rtrate_oth: retweet rate outside the community
-        rtrate_ocom: retweet rate inside community >=1
-        shape: exponent of bounded pareto distr.
-        maxday: maximum value of bounded pareto distr.
-        prop[0]: num of RTs by community members
-        prop[1]: unused (num of rcved by community members)
-        prop[2]: num of RTs
-        prop[3]: unused (num of rcved)
-        prop[4]: unused (num of new followers who have not retweeted)
-        prop[5]: alpha
-        prop[6]: accumulated number of RTs by community members
+        Execute event-driven simulation
+
+        rtrate_com: retweet rate inside community 1
+        rtrate_oth: retweet rate outside communities
+        rtrate_ocom: retweet rate inside community >1
+        shape: exponent of bounded Pareto
+        maxday: maximal value of bounded Pareto
+        prop[0]: number of RTs by community 1 members at this minute
+        prop[1]: unused 
+        prop[2]: number of RTs at this minute
+        prop[3]: unused 
+        prop[4]: unused 
+        prop[5]: cohesion index alpha_1
+        prop[6]: accumulated number of RTs by community 1 members
         prop[7]: accumulated number of RTs 
-        prop[8]: unused (accumulated number of new followers who have not retweeted)
+        prop[8]: unused 
 ################ 2020 6/4 2communities
-        prop[9]: beta-min
-        prop[10]: beta-max
+        prop[9]: min cohesion index of alpha_>1
+        prop[10]: max cohesion index of alpha_>1
 ################ 2020 6/11 weight
-		self.num_rcv accumulated number of RT received by followers who have not retweeted
+		self.num_rcv: accumulated number of RTs received by users who have not retweeted
         """
 
 ################ 2020 6/4 2communities
@@ -341,23 +340,23 @@ class Snet(nx.DiGraph):
         no_retweet_count = 0
         while self.cur_time < sim_time:
             if len(sched[0]) == 0:
-# No more user decisions in this minute
+# No more events at this minute
                 self.prop[-1][6] = self.num_rt_comm
                 self.prop[-1][7] = self.num_rt
                 if self.prop[-1][2] == 0:
-# There were no retweets in this minute
+# No retweets are posted at this minute
                     no_retweet_count += 1
                     if no_retweet_count == maxday:
-# There were no retweets for maxday minutes
+# No retweets for maxday period
                         print("sim_2: ", time.time() - start)
 ################# May 20 2020 No.2
                         print("cur_time=", self.cur_time, "len(prop)=", len(self.prop))
 #################
                         return                
                 else:
-# There was at least one retweet in this minute
+# At least one retweet exists at this minute
                     no_retweet_count = 0
-# Initializing for the next minute
+# Initialization before going on to the next minute
 ################ 2020 6/4 2communities
                 self.prop += [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 ################ 2020 6/4 2communities
@@ -367,10 +366,10 @@ class Snet(nx.DiGraph):
 #                continue
 #################             
             else:
-# There are still user to decide in this minute            
+# There still exists an event at this minute            
                 head = sched[0].pop(0)
                 if self.node_states[head][0]:
-# The head has already retweeted
+# The user has already retweeted
 ################# May 20 2020 No.4
                     self.node_states[head][3] += 1
 #################                     
@@ -379,22 +378,22 @@ class Snet(nx.DiGraph):
 ################ 2020 6/11 weight, 7/14 sin
                 self.num_rcv += 1
                 if rd.rand() <= self.discnt(head, delta, comm_on, sin):
-# A head retweets
+# A user post a retweet
                     self.node_states[head][0] = True
                     self.num_rt += 1
                     self.prop[-1][2] += 1
 ################ 2020 6/11 weight
 #                    if head_comm == 0:
                     if self.node_states[head][2] == 0:
-# The head belongs to the community
+# The user belongs to community 1
                         self.num_rt_comm += 1
                         self.prop[-1][0] += 1
-# scheduling
+# Put new events in the calendar
                     if self.out_degree(head) != 0:
-# the number of followers is not zero
+# At least one follower of the user exists
                         for j in self.successors(head):
                             if not self.node_states[j][0]:
-# A follower have not retweeted yet
+# The follower has not retweeted yet
                                 rn = self.truncated_pareto(shape, 1, maxday)
                                 sched[int(rn)] += [j]
 ################# May 20 2020 No.5                                
@@ -407,12 +406,14 @@ class Snet(nx.DiGraph):
 ################ 2020 6/11 weight
     def discnt(self, vertex, delta, comm_on, sin):
         """
-		comm_on=2: fluctuate the retweet rates 
-		comm_on=1: fluctuate only if from community members 
-		comm_on=0: fluctuate only if from non-community members
-        node_states[1]: How many times a node received retweets before it retweeted.
-        node_states[2]: whether the node belong to community i (i=1000 indicates non-community mem).
+        Calculate a retweet probability
+        
+		comm_on=2: retweet probability fluctuates everywhere 
+		comm_on=1: fluctuate only inside community 1 
+		comm_on=0: fluctuate only outside community 1 
 		user_para = {0: rtrate_com, 1: rtrate_oth, 2: rtrate_ocom}
+        delta: size of order-dependent fluctuations in retweet prob (delta_1)
+        sin: daily cycle fluctuations start (1) or not (0)
         """           
         
         if self.node_states[vertex][1] >= self.maxrecv:
