@@ -1,5 +1,5 @@
-<<<<<<< HEAD
-# bi-polar
+
+Bi-polarization
 
 Simulation Programs for Python 3.7:
 
@@ -10,11 +10,11 @@ Simulation Programs for Python 3.7:
     a simulation execution program for SW, SF, and ER graphs.
     
 3. data-repeat4_alpha.py: 
-    a simulation execution program for Pokec.
+    a simulation execution program for the Pokec graph.
     soc-pokec-relationships.txt (https://snap.stanford.edu/data/soc-Pokec.html) must be in the same folder.
 
 4. plot-data.py: 
-    a program that inputs a simulation output (numpy data) and outputs a histogram in Fig. 3 in the paper (a pdf file).
+    a program that outputs a histogram in Fig. 3 in the paper (a pdf file) using simulation output data (numpy data).
 
 Output of data-repeat3_alpha.py:
  
