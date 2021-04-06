@@ -40,11 +40,11 @@ def Lplot(fname='', title='', oname='', vc=10.0, xmax=0, gridon=0):
     pd.set_option('display.max_columns', 200)
     avg_vc_df = pd.DataFrame(avg_vc_np, 
         columns=["alpha_init", "alpha", 'beta', "time", "retweet", "comm_retweet"])
-    print(avg_vc_df)
+    # print(avg_vc_df)
     std_vc_df = pd.DataFrame(std_vc_np, 
         columns=["alpha_init", "alpha", 'beta', "time", "retweet", "comm_retweet"])
     # print(std_vc_df)
-    print(std_vc_df.div(avg_vc_df))            
+    # print(std_vc_df.div(avg_vc_df))            
 
      # Treq = prop_np[:,0]
     nt = np.array(temp)
@@ -127,3 +127,32 @@ Lplot(fn,title, vc=0, oname='Pokec-r10.017-cs100')
 fn ='2021-02-13_n1632803_cn1_cs100_a1_b1_dlt0.0_on2_i0_c1000_f200_r10.03_r20.03_r30.03_d1_s1.2_m4320_net4_mo0_ba1000'
 title = r'(l) Pokec, $\alpha_1=NC$, $\lambda_0^1=0.03$'
 Lplot(fn,title, vc=0, oname='Pokec-r10.03-cs100')
+
+
+# random community size and rewiring links
+fn ='2021-03-30_n800000_cn20_cs0_a0.2_b0.5_dlt0.0_on2_i0_c1000_c2100_f100_r10.03_r20.03_r30.03_p0_q0_d1_s1.2_m4320_net2_mo2_ba1000_rw0.01'
+title = r'(m) SF, $|\mathbb{C}_i| \sim U(10^2,10^3)$, $r_w=1\%$'
+Lplot(fn,title, vc=0, oname='20comm-l0.03-rc-rw', xmax=14000)
+
+fn ='2021-03-31_n200000_cn20_cs0_a0.2_b0.5_dlt0.0_on2_i0_c1000_c2100_f50_r10.04_r20.04_r30.04_p0.01_q0_d1_s1.2_m4320_net1_mo2_ba1000_rw0.01'
+title = r'(n) SW, $|\mathbb{C}_i| \sim U(10^2,10^3)$, $r_w=1\%$'
+Lplot(fn,title, vc=0, oname='SW-20comm-l0.04-rc-rw', xmax=50000)
+
+fn ='2021-03-31_n800000_cn20_cs0_a0.2_b0.5_dlt0.0_on2_i0_c1000_c2100_f100_r10.03_r20.03_r30.03_p0_q0_d1_s1.2_m4320_net2_mo2_ba1000_rw0.0'
+title = r' SF, $|\mathbb{C}_i| \sim U(10^2,10^3)$'
+Lplot(fn,title, vc=0, oname='20comm-l0.03-rc', xmax=14000)
+
+fn ='2021-04-01_n800000_cn20_cs0_a0.2_b0.5_dlt0.0_on2_i0_c1000_c20_f100_r10.03_r20.03_r30.03_p0_q0_d1_s1.2_m4320_net2_mo2_ba1000_rw0.01'
+title = r' SF, $r_w=1\%$'
+Lplot(fn,title, vc=0, oname='20comm-l0.03-rw', xmax=14000)
+
+
+
+
+
+
+
+
+
+
+

@@ -33,6 +33,7 @@ class Snet(nx.DiGraph):
     def __init__(self,
                  net_size=20,
                  comm_size=10,
+                 comm_size2=0,
                  fw_size=5,
                  alpha=0.1,
                  dcnt=0,
@@ -46,11 +47,14 @@ class Snet(nx.DiGraph):
 ################ 2020 6/21 more
                  more=0,
 ################ 2020 6/25 comm_strt
-                 comm_strt=0
+                 comm_strt=0,
+################ 2021 3/27            
+                 rate_rewire=0.0
                  ):
         super(Snet, self).__init__()
         self.net_size = net_size
         self.comm_size = comm_size
+        self.comm_size2 = comm_size2
         self.fw_size = fw_size
         self.alpha = alpha
 ################ 2020 6/4 2communities
@@ -65,6 +69,8 @@ class Snet(nx.DiGraph):
         self.q = q
         self.G = G
         self.maxrecv = 1000
+        self.rate_rewire=rate_rewire
+
 
         if dcnt == 0:
             self.dcnt_fun = [1 for i in range(1, self.maxrecv)]
@@ -103,9 +109,53 @@ class Snet(nx.DiGraph):
         elif netprop == 2:
             H = nx.extended_barabasi_albert_graph(n=self.net_size, m=8, p=self.p, q=self.q, seed=self.seed)
             G1 = H.to_directed()
+
         else:
         # Pokec
             G1 = self.G
+            
+            
+            
+################ 2021 3/27  rewire links randomly with a rate of rate_rewire
+
+        n_size = self.net_size
+        l_size = len(G1.edges)
+        num_rwir = round(self.rate_rewire * l_size)
+        # print("num_rwir", num_rwir)         
+        if num_rwir != 0:
+            G1_list = list(G1.edges)
+            G2 = nx.DiGraph()
+            G2.add_edges_from(G1.edges)
+            l_select = []
+            # add_link = []
+            # rmv_link = []
+            for i in range(num_rwir):
+                # if (i % 10000 == 0 ): print("i=", i)
+                pt = rd.randint(0,l_size)
+                while (pt in l_select):
+                    pt = rd.randint(0,l_size)
+                l_select += [pt]
+                n1 = G1_list[pt][0]
+                s1 = G1_list[pt][1]
+                n2 = rd.randint(0,n_size)
+                while (n2 in G1.successors(n1) or n2 in G2.successors(n1) or n1 == n2):
+                    n2 = rd.randint(0,n_size)   
+                # print(G1_list[pt], pt, n1, s1, n2)
+                G1.remove_edge(n1,s1)
+                G1.add_edge(n1,n2)
+                
+            #     rmv_link += [(n1,s1)]
+            #     add_link += [(n1,n2)]
+            # G1.remove_edges_from(rmv_link)
+            # G1.add_edges_from(add_link)
+            
+            # print("Total links:", len(G1.edges), "rewired:", num_rwir)
+            # print("rmv: ", rmv_link, "add: ", add_link)
+            # print(len(G1.edges), list(G1.edges))         
+################ 2021 3/27            
+                            
+    
+            
 
 ################ 2020 6/27 rate
         self.node_states = [[False, 0, 1000, 0] for _ in range(self.net_size)]
@@ -130,7 +180,6 @@ class Snet(nx.DiGraph):
                 
 #            print(self.edges())
 #         print("edges:", self.size(), "replacements:", len(rmvb))
-################ 2020 6/4 2communities
 
 ################ 2020 6/4 2communities
 
@@ -149,15 +198,19 @@ class Snet(nx.DiGraph):
 ################ 2020 6/4 2communities
         if comm_id == 0: # comm_id=0 corresponds to C_1
             index = self.alpha
+            c_size = self.comm_size
         else:
             index = self.beta
-#        strt = comm_id * self.comm_size
+            if self.comm_size2 == 0:
+                c_size = self.comm_size
+            else:
+                c_size = rd.randint(self.comm_size2, self.comm_size+1)
 ################ 2020 6/25 comm_strt
         strt = comm_id * self.comm_size * 2 + self.comm_size * self.comm_strt
 ################ 2020 6/22        
         if strt >= self.net_size:
             strt = self.comm_size + strt % self.net_size
-        for i in range(self.comm_size):
+        for i in range(c_size):
 ################ 2020 6/4 2communities
             mapp = i + strt
 ################ 2020 6/27 rate
@@ -178,17 +231,14 @@ class Snet(nx.DiGraph):
             nsucc = succ[:]
 #                print("nsucc", nsucc)
             for k in succ:
-                # if k < self.comm_size:
-#                if  comm_id * self.comm_size <= k and k < (comm_id + 1) * self.comm_size:
-                if  strt <= k and k < strt + self.comm_size:
+                if  strt <= k and k < strt + c_size:
                     succ_in_cnt += 1
                     if succ_in_cnt > follower_in:
                         id = k
                         repe = 0
                         while (id in nsucc and repe < maxrep):
                             repe += 1
-                            rnum = rd.randint(self.comm_size, self.net_size)
-#                            id = (rnum + comm_id * self.comm_size) % self.net_size
+                            rnum = rd.randint(c_size, self.net_size)
                             id = (rnum + strt) % self.net_size
                         if repe < maxrep:
                             nsucc += [id]
@@ -202,15 +252,13 @@ class Snet(nx.DiGraph):
                             succ_out_cnt += 1
     #                            print(mapp, len(succ), succ_in_cnt, succ_out_cnt)
                 else:
-                # if k >= self.comm_size:
                     succ_out_cnt += 1
                     if succ_out_cnt > follower_out:
                         id = k
                         repe = 0
                         while ((id in nsucc or id == mapp) and repe < maxrep):
                             repe += 1
-                            rnum = rd.randint(0, self.comm_size)
-#                            id = (rnum + comm_id * self.comm_size) % self.net_size
+                            rnum = rd.randint(0, c_size)
                             id = rnum + strt
                         if repe < maxrep:
                             nsucc += [id]
